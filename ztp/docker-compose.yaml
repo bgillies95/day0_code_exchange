@@ -1,0 +1,25 @@
+version: '3'
+services:
+
+  serve_ztp:
+    build: ./serve_ztp
+    ports:
+      - 8080:80
+    restart: unless-stopped
+
+  serve_devicemap:
+    build: ./serve_devicemap
+    volumes:
+      - /srv/data/data.csv:/usr/src/app/data.csv:ro
+    ports:
+      - 8081:8081
+    restart: unless-stopped
+
+  test_devicemap:
+    build: ./test_devicemap
+
+
+
+networks:
+  devmap_net:
+    driver: bridge

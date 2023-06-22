@@ -1,0 +1,223 @@
+hostname IOS-STAGING
+service tcp-keepalives-in
+service tcp-keepalives-out
+service nagle
+service timestamps debug datetime msec localtime show-timezone
+service timestamps log datetime msec localtime show-timezone
+service password-encryption
+ip subnet-zero
+udld enable
+service compress-config
+service sequence-numbers
+no tftp server
+no ip http server
+no ip http secure-server
+no ip http secure-port
+no ip http secure-ciphersuite
+no service finger
+no service udp-small-servers
+no service tcp-small-servers
+no service pad
+no tftp server
+no ip finger
+no ip bootp server
+no ip source-route
+no ip gratuitous-arps
+ip icmp rate-limit unreachable 1000
+no ip forward-protocol udp tftp
+no ip forward-protocol udp domain
+no ip forward-protocol udp time
+no ip forward-protocol udp netbios-ns
+no ip forward-protocol udp netbios-dgm
+no ip forward-protocol udp tacacs
+enable secret password123
+username testuser password pass123!
+logging buffered 16384 informational
+logging console critical
+logging trap informational
+login block-for 30 attempts 3 within 15
+login delay 5
+login on-failure log
+login on-success log 
+archive 
+ path flash:config-backup
+ maximum 10
+ write-memory
+ time-period 10080
+ log config
+   logging enable
+   logging size 1000
+   hidekeys
+exit
+no tacacs-server directed-request
+aaa authentication fail-message $
+********************************************************************
+* The supplied "Username" and/or "Password" is not valid.          *
+* This failed login attempt has been recorded for audit purposes.  *
+********************************************************************
+$
+aaa authentication login VTY-LOGIN group TACACS_SERVERS local-case 
+aaa authentication login CONSOLE group TACACS_SERVERS local-case 
+aaa authentication enable default group TACACS_SERVERS enable 
+aaa authorization exec EXEC-AUTH group TACACS_SERVERS local if-authenticated 	
+aaa authorization commands 1 COMMANDS-1-AUTH group TACACS_SERVERS local if-authenticated 
+aaa authorization commands 15 COMMANDS-15-AUTH group TACACS_SERVERS local if-authenticated 
+aaa accounting exec EXEC-ACCOUNTING start-stop group TACACS_SERVERS 
+aaa accounting commands 1 COMMANDS-1-ACCT start-stop group TACACS_SERVERS
+aaa accounting commands 15 COMMANDS-15-ACCT start-stop group TACACS_SERVERS
+clock timezone WST 8
+ip dhcp snooping 
+no ip dhcp snooping information option
+ip domain-name test.corp.org
+ip domain lookup
+service call-home
+call-home
+ no http secure server-identity-check
+ profile "CiscoTAC-1"
+  no active
+  no reporting smart-licensing-data
+  destination transport-method http
+  no destination transport-method email
+  exit
+ profile SSMOnPrem
+  reporting smart-licensing-data
+  destination transport-method http
+  destination preferred-msg-format xml
+  active
+crypto pki trustpoint SLA-TrustPoint
+  revocation-check none
+ip http client source-interface Vlan69
+errdisable recovery cause all
+errdisable recovery interval 300
+memory free low-watermark processor 200000
+memory free low-watermark io 20000
+memory reserve critical 1000
+spanning-tree mode rapid-pvst
+spanning-tree loopguard default
+spanning-tree portfast bpduguard default
+spanning-tree extend system-id
+lldp run
+crypto key generate rsa general-keys modulus 2048
+ip ssh version 2 
+ip ssh time-out 60
+ip ssh authentication-retries 3
+ip ssh dscp 16
+ip ssh source-interface Vlan69
+class-map match-all IPTel-Control
+  description VOIP Control Traffic ( SCCP,H225,H254,MGCP )
+ match access-group name Permit-IPTel-Control
+class-map match-all IPTel-Calls
+  description VOIP Bearer Traffic
+ match access-group name Permit-IPTel-Calls
+exit
+policy-map edge-port-in
+ description Set DSCP label for Voice Traffic
+ class IPTel-Control
+  set dscp cs3
+ class IPTel-Calls
+  set dscp ef
+exit
+interface Vlan1
+ description DEFAULT VLAN - Do NOT Use!
+ shutdown
+exit
+ip default-gateway 10.198.104.254
+ip access-list standard SNMP-RO
+ remark SNMP RO Control ACL
+ permit 10.198.104.0 0.0.0.255
+ip access-list extended Permit-IPTel-Calls
+ remark Match the UDP ports that VoIP Uses for Bearer Traffic
+ permit udp any any range 16384 32767
+ remark Match the UDP ports that NEC uses for Bearer Traffic
+ permit udp any any range 50000 65535
+ip access-list extended Permit-IPTel-Control
+ remark Match VoIP Control Traffic
+ remark SCCP
+ permit tcp any any range 2000 2002
+ remark H323 Fast Start
+ permit tcp any any eq 1720
+ remark H323 Slow Start
+ permit tcp any any range 11000 11999
+ remark H323 MGCP
+ permit udp any any eq 2427
+ remark NEC RAS
+ permit udp any any range 3454 3460
+logging host 10.45.219.19
+logging facility local7
+logging trap errors
+logging source-interface Vlan1
+snmp-server system-shutdown
+snmp-server trap-source Vlan69
+snmp-server enable traps entity
+snmp-server enable traps envmon
+snmp-server enable traps errdisable
+snmp-server enable traps stackwise
+snmp-server enable traps transceiver all
+snmp-server enable traps cpu threshold
+snmp-server enable traps flash insertion removal
+snmp-server enable traps bridge newroot topologychange
+snmp-server enable traps snmp linkdown linkup coldstart warmstart
+snmp-server enable traps snmp authentication linkdown linkup coldstart warmstart
+snmp-server enable traps vtp
+snmp-server enable traps vlancreate
+snmp-server enable traps vlandelete
+snmp-server enable traps port-security
+snmp-server enable traps envmon fan shutdown supply temperature status
+snmp-server enable traps hsrp
+snmp-server enable traps stpx inconsistency root-inconsistency loop-inconsistency
+snmp-server enable traps mac-notification change move threshold
+snmp-server enable traps vlan-membership
+snmp-server enable traps cpu threshold
+snmp-server location [BUILDING, <site name>, AU]
+banner motd ^
+***********************************************************************
+*                                                                     *
+*           TEST BANNER                                               *
+***********************************************************************
+^
+banner exec ^
+=============================================================================
+|                                                                           |
+|                                 TEST BANNER                               |
+=============================================================================
+^C
+alias exec srb show running-config | begin
+alias exec sri show running-config | include
+alias exec sre show running-config | exclude
+alias exec sir show ip route
+alias exec scn show cdp neighbors
+alias exec sid show interface description
+alias exec sib show ip interface brief
+alias exec svb show vlan brief
+line con 0
+ session-timeout 10
+ login authentication CONSOLE 
+line vty 0 15
+ access-class VTYACCESS in
+ transport input ssh
+ transport output none 
+scheduler interval 500
+ntp source Vlan69
+interface vlan 69
+  ip address dhcp
+  description Switch Management Interface
+  no ip redirects
+  no ip unreachables
+  no ip proxy-arp
+  no ip mask-reply
+  no ip directed-broadcast
+  no shutdown
+exit
+interface TenGigabitEthernet1/0/2
+  description test description
+  switchport mode trunk
+  switchport trunk native vlan 999
+  logging event link-status
+  switchport nonegotiate
+  power inline never
+  ip dhcp snooping trust
+  exit
+vtp domain brockman
+vtp mode client
+vtp version 2
+end
